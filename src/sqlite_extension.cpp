@@ -30,7 +30,7 @@ static void LoadInternal(DatabaseInstance &db) {
 	auto &config = DBConfig::GetConfig(db);
 	config.AddExtensionOption("sqlite_all_varchar", "Load all SQLite columns as VARCHAR columns", LogicalType::BOOLEAN);
 
-	config.AddExtensionOption("sqlite_debug_show_queries", "DEBUG SETTING: print all queries sent to Postgres to stdout",
+	config.AddExtensionOption("sqlite_debug_show_queries", "DEBUG SETTING: print all queries sent to SQLite to stdout",
 	                          LogicalType::BOOLEAN, Value::BOOLEAN(false), SetSqliteDebugQueryPrint);
 
 	config.storage_extensions["sqlite_scanner"] = make_uniq<SQLiteStorageExtension>();
