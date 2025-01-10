@@ -274,9 +274,9 @@ static void SqliteScan(ClientContext &context, TableFunctionInput &data, DataChu
 						FlatVector::GetData<date_t>(out_vec)[out_idx] =
 						    Date::FromCString((const char *)sqlite3_value_text(val), sqlite3_value_bytes(val));
 					} else {
-						throw NotImplementedException(
-						    "Unimplemented SQLite type for column of type DATE\n* SET sqlite_all_varchar=true to "
-						    "load all columns as VARCHAR and skip type conversions");
+						throw NotImplementedException("Unimplemented SQLite type for column of type DATE\n* SET "
+						                              "sqlite_all_varchar=true to "
+						                              "load all columns as VARCHAR and skip type conversions");
 					}
 					break;
 				case LogicalTypeId::TIMESTAMP:
@@ -284,9 +284,10 @@ static void SqliteScan(ClientContext &context, TableFunctionInput &data, DataChu
 					// See https://www.sqlite.org/lang_datefunc.html
 					// The conventions are:
 					// A text string that is an ISO 8601 date/time value
-					// The number of days including fractional days since -4713-11-24 12:00:00
-					// The number of seconds including fractional seconds since 1970-01-01 00:00:00
-					// for now we only support ISO-8601 and unix timestamps
+					// The number of days including fractional days since -4713-11-24
+					// 12:00:00 The number of seconds including fractional seconds since
+					// 1970-01-01 00:00:00 for now we only support ISO-8601 and unix
+					// timestamps
 					if (sqlite_column_type == SQLITE_INTEGER) {
 						// unix timestamp
 						FlatVector::GetData<timestamp_t>(out_vec)[out_idx] = ConvertTimestampInteger(val);
@@ -297,9 +298,9 @@ static void SqliteScan(ClientContext &context, TableFunctionInput &data, DataChu
 						FlatVector::GetData<timestamp_t>(out_vec)[out_idx] =
 						    Timestamp::FromCString((const char *)sqlite3_value_text(val), sqlite3_value_bytes(val));
 					} else {
-						throw NotImplementedException(
-						    "Unimplemented SQLite type for column of type TIMESTAMP\n* SET sqlite_all_varchar=true to "
-						    "load all columns as VARCHAR and skip type conversions");
+						throw NotImplementedException("Unimplemented SQLite type for column of type TIMESTAMP\n* SET "
+						                              "sqlite_all_varchar=true to "
+						                              "load all columns as VARCHAR and skip type conversions");
 					}
 					break;
 				case LogicalTypeId::BLOB:
@@ -315,10 +316,20 @@ static void SqliteScan(ClientContext &context, TableFunctionInput &data, DataChu
 	}
 }
 
-static string SqliteToString(const FunctionData *bind_data_p) {
-	D_ASSERT(bind_data_p);
+static InsertionOrderPreservingMap<string> SqliteToString(TableFunctionToStringInput &input) {
+	D_ASSERT(input.bind_data);
+	InsertionOrderPreservingMap<string> result;
+	auto &bind_data = input.bind_data->Cast<SqliteBindData>();
+	result["Table"] = bind_data.table_name;
+	result["File"] = bind_data.file_name;
+	return result;
+}
+
+BindInfo SqliteBindInfo(const optional_ptr<FunctionData> bind_data_p) {
+	BindInfo info(ScanType::EXTERNAL);
 	auto &bind_data = bind_data_p->Cast<SqliteBindData>();
-	return StringUtil::Format("%s:%s", bind_data.file_name, bind_data.table_name);
+	info.table = bind_data.table;
+	return info;
 }
 
 /*
@@ -338,6 +349,7 @@ SqliteScanFunction::SqliteScanFunction()
                     SqliteInitGlobalState, SqliteInitLocalState) {
 	cardinality = SqliteCardinality;
 	to_string = SqliteToString;
+	get_bind_info = SqliteBindInfo;
 	projection_pushdown = true;
 }
 

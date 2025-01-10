@@ -44,6 +44,7 @@ TableFunction SQLiteTableEntry::GetScanFunction(ClientContext &context, unique_p
 		result->global_db = &db;
 		result->rows_per_group = optional_idx();
 	}
+	result->table = this;
 
 	bind_data = std::move(result);
 	return static_cast<TableFunction>(SqliteScanFunction());

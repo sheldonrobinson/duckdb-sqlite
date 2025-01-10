@@ -13,6 +13,7 @@
 
 namespace duckdb {
 class SQLiteDB;
+class TableCatalogEntry;
 
 struct SqliteBindData : public TableFunctionData {
 	string file_name;
@@ -26,6 +27,8 @@ struct SqliteBindData : public TableFunctionData {
 
 	optional_idx rows_per_group = 122880;
 	SQLiteDB *global_db;
+
+	optional_ptr<TableCatalogEntry> table;
 };
 
 class SqliteScanFunction : public TableFunction {

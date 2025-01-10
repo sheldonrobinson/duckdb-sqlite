@@ -49,7 +49,8 @@ SQLiteDB SQLiteDB::Open(const string &path, const SQLiteOpenOptions &options, bo
 	// default busy time-out of 5 seconds
 	if (options.busy_timeout > 0) {
 		if (options.busy_timeout > NumericLimits<int>::Maximum()) {
-			throw std::runtime_error("busy_timeout out of range - must be within valid range for type int");
+			throw std::runtime_error("busy_timeout out of range - must be within "
+			                         "valid range for type int");
 		}
 		rc = sqlite3_busy_timeout(result.db, int(options.busy_timeout));
 		if (rc != SQLITE_OK) {
