@@ -21,7 +21,6 @@ SELECT * FROM actor LIMIT 10;
 9	JOE	SWANK	2021-03-06 15:51:59
 10	CHRISTIAN	GABLE	2021-03-06 15:51:59
 
-
 statement ok
 SET sqlite_debug_show_queries=true;
 
