@@ -5,6 +5,7 @@ add_library(
   sqlite_index.cpp
   sqlite_index_entry.cpp
   sqlite_insert.cpp
+  sqlite_query.cpp
   sqlite_table_entry.cpp
   sqlite_schema_entry.cpp
   sqlite_transaction.cpp

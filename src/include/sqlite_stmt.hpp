@@ -1,7 +1,7 @@
 //===----------------------------------------------------------------------===//
 //                         DuckDB
 //
-// sqlite_utils.hpp
+// sqlite_stmt.hpp
 //
 //
 //===----------------------------------------------------------------------===//
@@ -44,6 +44,8 @@ public:
 	void BindBlob(idx_t col, const string_t &value);
 	void BindValue(Vector &col, idx_t c, idx_t r);
 	int GetType(idx_t col);
+	string GetName(idx_t col);
+	idx_t GetColumnCount();
 	bool IsOpen();
 	void Close();
 	void CheckTypeMatches(const SqliteBindData &bind_data, sqlite3_value *val, int sqlite_column_type,

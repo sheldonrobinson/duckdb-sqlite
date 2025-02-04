@@ -85,6 +85,9 @@ string GetCreateIndexSQL(CreateIndexInfo &info, TableCatalogEntry &tbl) {
 		sql += " UNIQUE";
 	}
 	sql += " INDEX ";
+	if (info.on_conflict == OnCreateConflict::IGNORE_ON_CONFLICT) {
+		sql += " IF NOT EXISTS ";
+	}
 	sql += KeywordHelper::WriteOptionallyQuoted(info.index_name);
 	sql += " ON ";
 	sql += KeywordHelper::WriteOptionallyQuoted(tbl.name);

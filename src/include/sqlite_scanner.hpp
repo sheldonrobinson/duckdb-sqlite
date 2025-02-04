@@ -21,6 +21,7 @@ struct SqliteBindData : public TableFunctionData {
 
 	vector<string> names;
 	vector<LogicalType> types;
+	string sql;
 
 	RowIdInfo row_id_info;
 	bool all_varchar = false;
@@ -39,6 +40,11 @@ public:
 class SqliteAttachFunction : public TableFunction {
 public:
 	SqliteAttachFunction();
+};
+
+class SQLiteQueryFunction : public TableFunction {
+public:
+	SQLiteQueryFunction();
 };
 
 } // namespace duckdb
