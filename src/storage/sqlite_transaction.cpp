@@ -7,6 +7,10 @@
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/catalog/catalog_entry/index_catalog_entry.hpp"
 #include "duckdb/catalog/catalog_entry/view_catalog_entry.hpp"
+#include "duckdb/parser/parser.hpp"
+#include "duckdb/parser/statement/create_statement.hpp"
+#include "duckdb/parser/parsed_expression_iterator.hpp"
+#include "duckdb/parser/expression/columnref_expression.hpp"
 
 namespace duckdb {
 
@@ -42,6 +46,45 @@ SQLiteDB &SQLiteTransaction::GetDB() {
 
 SQLiteTransaction &SQLiteTransaction::Get(ClientContext &context, Catalog &catalog) {
 	return Transaction::Get(context, catalog).Cast<SQLiteTransaction>();
+}
+
+void ExtractColumnIds(const ParsedExpression &expr, TableCatalogEntry &table, CreateIndexInfo &info) {
+	if (expr.GetExpressionType() == ExpressionType::COLUMN_REF) {
+		auto &colref = expr.Cast<ColumnRefExpression>();
+		auto &colname = colref.GetColumnName();
+		auto &column_def = table.GetColumn(colname);
+		auto index = column_def.Oid();
+		if (std::find(info.column_ids.begin(), info.column_ids.end(), index) == info.column_ids.end()) {
+			info.column_ids.push_back(index);
+		}
+		return;
+	}
+	ParsedExpressionIterator::EnumerateChildren(expr, [&](const ParsedExpression &child) {
+		ExtractColumnIds(child, table, info);
+	});
+}
+
+unique_ptr<CreateIndexInfo> FromCreateIndex(ClientContext &context, TableCatalogEntry &table, string sql) {
+	// parse the SQL statement
+	Parser parser;
+	parser.ParseQuery(sql);
+
+	if (parser.statements.size() != 1 || parser.statements[0]->type != StatementType::CREATE_STATEMENT) {
+		throw BinderException(
+			"Failed to create index from SQL string - \"%s\" - statement did not contain a single CREATE INDEX statement",
+			sql);
+	}
+	auto &create_statement = parser.statements[0]->Cast<CreateStatement>();
+	if (create_statement.info->type != CatalogType::INDEX_ENTRY) {
+		throw BinderException(
+			"Failed to create view from SQL string - \"%s\" - view did not contain a CREATE INDEX statement", sql);
+	}
+	auto info = unique_ptr_cast<CreateInfo, CreateIndexInfo>(std::move(create_statement.info));
+	info->sql = std::move(sql);
+	for(auto &expr : info->expressions) {
+		ExtractColumnIds(*expr, table, *info);
+	}
+	return info;
 }
 
 optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entry_name) {
@@ -80,17 +123,18 @@ optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entr
 		break;
 	}
 	case CatalogType::INDEX_ENTRY: {
-		CreateIndexInfo info;
-		info.index_name = entry_name;
-		info.constraint_type = IndexConstraintType::NONE;
-
 		string table_name;
 		string sql;
 		db->GetIndexInfo(entry_name, sql, table_name);
+		if (sql.empty()) {
+			throw InternalException("SQL is empty");
+		}
+		auto &table = GetCatalogEntry(table_name)->Cast<TableCatalogEntry>();
+		auto index_info = FromCreateIndex(*context.lock(), table, std::move(sql));
+		index_info->catalog = sqlite_catalog.GetName();
 
 		auto index_entry =
-		    make_uniq<SQLiteIndexEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), info, std::move(table_name));
-		index_entry->sql = std::move(sql);
+		    make_uniq<SQLiteIndexEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), *index_info, std::move(table_name));
 		result = std::move(index_entry);
 		break;
 	}
