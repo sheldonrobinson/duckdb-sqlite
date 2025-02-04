@@ -74,7 +74,7 @@ optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entr
 		string sql;
 		db->GetViewInfo(entry_name, sql);
 
-		auto view_info = CreateViewInfo::FromCreateView(*context.lock(), sql);
+		auto view_info = CreateViewInfo::FromCreateView(*context.lock(), sqlite_catalog.GetMainSchema(), sql);
 		view_info->internal = false;
 		result = make_uniq<ViewCatalogEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), *view_info);
 		break;
