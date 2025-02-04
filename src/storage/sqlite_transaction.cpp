@@ -135,16 +135,15 @@ optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entr
 		string sql;
 		db->GetViewInfo(entry_name, sql);
 
-
 		unique_ptr<CreateViewInfo> view_info;
 		try {
-			view_info = CreateViewInfo::FromCreateView(*context.lock(), sql);
+			view_info = CreateViewInfo::FromCreateView(*context.lock(), sqlite_catalog.GetMainSchema(), sql);
 		} catch(std::exception &ex) {
 			auto view_sql = ExtractSelectStatement(sql);
 			auto catalog_name = StringUtil::Replace(sqlite_catalog.GetName(), "\"", "\"\"");
 			auto escaped_view_sql = StringUtil::Replace(view_sql, "'", "''");
 			auto view_def = StringUtil::Format("CREATE VIEW %s AS FROM sqlite_query(\"%s\", '%s')", entry_name, catalog_name, escaped_view_sql);
-			view_info = CreateViewInfo::FromCreateView(*context.lock(), view_def);
+			view_info = CreateViewInfo::FromCreateView(*context.lock(), sqlite_catalog.GetMainSchema(), view_def);
 		}
 		view_info->internal = false;
 		result = make_uniq<ViewCatalogEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), *view_info);
