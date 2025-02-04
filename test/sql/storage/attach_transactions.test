@@ -38,11 +38,20 @@ SELECT * FROM s.test
 ----
 42
 
+query I
+SELECT * FROM sqlite_query('s', 'SELECT * FROM test')
+----
+42
+
 statement ok
 ROLLBACK
 
 query I
 SELECT * FROM s.test
+----
+
+query I
+SELECT * FROM sqlite_query('s', 'SELECT * FROM test')
 ----
 
 # commit insert
