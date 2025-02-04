@@ -27,6 +27,9 @@ static void LoadInternal(DatabaseInstance &db) {
 	SqliteAttachFunction attach_func;
 	ExtensionUtil::RegisterFunction(db, attach_func);
 
+	SQLiteQueryFunction query_func;
+	ExtensionUtil::RegisterFunction(db, query_func);
+
 	auto &config = DBConfig::GetConfig(db);
 	config.AddExtensionOption("sqlite_all_varchar", "Load all SQLite columns as VARCHAR columns", LogicalType::BOOLEAN);
 

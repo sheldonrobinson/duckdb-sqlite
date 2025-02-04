@@ -43,6 +43,16 @@ int SQLiteStatement::GetType(idx_t col) {
 	return sqlite3_column_type(stmt, col);
 }
 
+string SQLiteStatement::GetName(idx_t col) {
+	D_ASSERT(stmt);
+	return sqlite3_column_name(stmt, col);
+}
+
+idx_t SQLiteStatement::GetColumnCount() {
+	D_ASSERT(stmt);
+	return sqlite3_column_count(stmt);
+}
+
 bool SQLiteStatement::IsOpen() {
 	return stmt;
 }
