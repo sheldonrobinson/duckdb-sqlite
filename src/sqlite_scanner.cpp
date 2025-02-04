@@ -99,23 +99,27 @@ static void SqliteInitInternal(ClientContext &context, const SqliteBindData &bin
 		local_state.owned_db = SQLiteDB::Open(bind_data.file_name.c_str(), options);
 		local_state.db = &local_state.owned_db;
 	}
+	string sql;
+	if (bind_data.sql.empty()) {
+		auto col_names = StringUtil::Join(
+			local_state.column_ids.data(), local_state.column_ids.size(), ", ", [&](const idx_t column_id) {
+				return column_id == (column_t)-1 ? "ROWID"
+												 : '"' + SQLiteUtils::SanitizeIdentifier(bind_data.names[column_id]) + '"';
+			});
 
-	auto col_names = StringUtil::Join(
-	    local_state.column_ids.data(), local_state.column_ids.size(), ", ", [&](const idx_t column_id) {
-		    return column_id == (column_t)-1 ? "ROWID"
-		                                     : '"' + SQLiteUtils::SanitizeIdentifier(bind_data.names[column_id]) + '"';
-	    });
-
-	auto sql =
-	    StringUtil::Format("SELECT %s FROM \"%s\"", col_names, SQLiteUtils::SanitizeIdentifier(bind_data.table_name));
-	if (bind_data.rows_per_group.IsValid()) {
-		// we are scanning a subset of the rows - generate a WHERE clause based on
-		// the rowid
-		auto where_clause = StringUtil::Format(" WHERE ROWID BETWEEN %d AND %d", rowid_min, rowid_max);
-		sql += where_clause;
+		sql =
+		    StringUtil::Format("SELECT %s FROM \"%s\"", col_names, SQLiteUtils::SanitizeIdentifier(bind_data.table_name));
+		if (bind_data.rows_per_group.IsValid()) {
+			// we are scanning a subset of the rows - generate a WHERE clause based on
+			// the rowid
+			auto where_clause = StringUtil::Format(" WHERE ROWID BETWEEN %d AND %d", rowid_min, rowid_max);
+			sql += where_clause;
+		} else {
+			// we are scanning the entire table - no need for a WHERE clause
+			D_ASSERT(rowid_min == 0);
+		}
 	} else {
-		// we are scanning the entire table - no need for a WHERE clause
-		D_ASSERT(rowid_min == 0);
+		sql = bind_data.sql;
 	}
 	local_state.stmt = local_state.db->Prepare(sql.c_str());
 }
