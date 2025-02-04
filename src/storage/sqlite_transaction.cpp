@@ -7,6 +7,9 @@
 #include "duckdb/parser/parsed_data/create_view_info.hpp"
 #include "duckdb/catalog/catalog_entry/index_catalog_entry.hpp"
 #include "duckdb/catalog/catalog_entry/view_catalog_entry.hpp"
+#include "duckdb/parser/parsed_data/create_view_info.hpp"
+#include "duckdb/parser/statement/create_statement.hpp"
+#include "duckdb/parser/parser.hpp"
 
 namespace duckdb {
 
@@ -44,6 +47,23 @@ SQLiteTransaction &SQLiteTransaction::Get(ClientContext &context, Catalog &catal
 	return Transaction::Get(context, catalog).Cast<SQLiteTransaction>();
 }
 
+string ExtractSelectStatement(const string &create_view) {
+	Parser parser;
+	parser.ParseQuery(create_view);
+	if (parser.statements.size() != 1 || parser.statements[0]->type != StatementType::CREATE_STATEMENT) {
+		throw BinderException(
+		    "Failed to create view from SQL string - \"%s\" - statement did not contain a single CREATE VIEW statement",
+		    create_view);
+	}
+	auto &create_statement = parser.statements[0]->Cast<CreateStatement>();
+	if (create_statement.info->type != CatalogType::VIEW_ENTRY) {
+		throw BinderException(
+		    "Failed to create view from SQL string - \"%s\" - view did not contain a CREATE VIEW statement", create_view);
+	}
+	auto &view_info = create_statement.info->Cast<CreateViewInfo>();
+	return view_info.query->ToString();
+}
+
 optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entry_name) {
 	auto entry = catalog_entries.find(entry_name);
 	if (entry != catalog_entries.end()) {
@@ -74,7 +94,17 @@ optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entr
 		string sql;
 		db->GetViewInfo(entry_name, sql);
 
-		auto view_info = CreateViewInfo::FromCreateView(*context.lock(), sql);
+
+		unique_ptr<CreateViewInfo> view_info;
+		try {
+			view_info = CreateViewInfo::FromCreateView(*context.lock(), sql);
+		} catch(std::exception &ex) {
+			auto view_sql = ExtractSelectStatement(sql);
+			auto catalog_name = StringUtil::Replace(sqlite_catalog.GetName(), "\"", "\"\"");
+			auto escaped_view_sql = StringUtil::Replace(view_sql, "'", "''");
+			auto view_def = StringUtil::Format("CREATE VIEW %s AS FROM sqlite_query(\"%s\", '%s')", entry_name, catalog_name, escaped_view_sql);
+			view_info = CreateViewInfo::FromCreateView(*context.lock(), view_def);
+		}
 		view_info->internal = false;
 		result = make_uniq<ViewCatalogEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), *view_info);
 		break;
