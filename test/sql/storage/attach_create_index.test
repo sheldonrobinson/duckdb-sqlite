@@ -17,6 +17,9 @@ INSERT INTO s.test VALUES (1), (2), (3);
 statement ok
 CREATE INDEX i_index ON s.main.test(i);
 
+statement ok
+CREATE INDEX IF NOT EXISTS i_index ON s.main.test(i);
+
 query I
 SELECT * FROM s.test WHERE i=2
 ----

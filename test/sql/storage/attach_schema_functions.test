@@ -24,7 +24,6 @@ query IIII
 SELECT * EXCLUDE (sql) FROM sqlite_master ORDER BY 1, 2
 ----
 index	i_index	integers	0
-index	sqlite_autoindex_integers_1	integers	0
 table	integers	integers	0
 view	v1	v1	0
 
@@ -44,7 +43,6 @@ s	v1
 query III
 SELECT database_name, index_name, table_name FROM duckdb_indexes
 ----
-s	sqlite_autoindex_integers_1	integers
 s	i_index	integers
 
 query III
