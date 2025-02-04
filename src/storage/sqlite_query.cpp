@@ -18,7 +18,7 @@ static unique_ptr<FunctionData> SQLiteQueryBind(ClientContext &context, TableFun
 	auto result = make_uniq<SqliteBindData>();
 
 	if (input.inputs[0].IsNull() || input.inputs[1].IsNull()) {
-		throw BinderException("Parameters to postgres_query cannot be NULL");
+		throw BinderException("Parameters to sqlite_query cannot be NULL");
 	}
 
 	// look up the database to query
