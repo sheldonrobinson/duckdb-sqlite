@@ -39,3 +39,18 @@ SELECT last_name, first_name FROM sqlite_query(sakila, 'SELECT * FROM actor WHER
 GUINESS	ED
 GUINESS	PENELOPE
 GUINESS	SEAN
+
+statement error
+SELECT * FROM sqlite_query(s, '')
+----
+Failed to prepare
+
+statement error
+SELECT * FROM sqlite_query(s, 'SELEC 42')
+----
+Failed to prepare
+
+statement error
+SELECT * FROM sqlite_query(s, 'CREATE TABLE my_table(a,b,c)')
+----
+query must return data

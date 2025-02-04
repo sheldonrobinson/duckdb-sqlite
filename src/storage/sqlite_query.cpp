@@ -44,11 +44,17 @@ static unique_ptr<FunctionData> SQLiteQueryBind(ClientContext &context, TableFun
 
 	auto &con = transaction.GetDB();
 	auto stmt = con.Prepare(sql);
+	if (!stmt.stmt) {
+		throw BinderException("Failed to prepare query \"%s\"", sql);
+	}
 	for(idx_t c = 0; c < stmt.GetColumnCount(); c++) {
 		return_types.emplace_back(LogicalType::VARCHAR);
 		names.emplace_back(stmt.GetName(c));
 	}
 	stmt.Close();
+	if (names.empty()) {
+		throw BinderException("Failed to execute query \"%s\" - query must return data", sql);
+	}
 	result->rows_per_group = optional_idx();
 	result->sql = std::move(sql);
 	result->all_varchar = true;
