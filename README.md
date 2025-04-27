@@ -183,6 +183,9 @@ SELECT * FROM sqlite_db.tmp;
 
 ## Building & Loading the Extension
 
+>**Tip**:
+>Before building, fetch submodules with `git submodule update --remote`
+
 To build, type 
 ```
 make
