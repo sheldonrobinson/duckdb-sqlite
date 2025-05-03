@@ -20,22 +20,22 @@ SHOW TABLES;
 You can query the tables using SQL, e.g. using the example queries from sakila-examples.sql
 
 ```sql
-SELECT cat.name category_name, 
-       Sum(Ifnull(pay.amount, 0)) revenue 
-FROM   category cat 
-       LEFT JOIN film_category flm_cat 
-              ON cat.category_id = flm_cat.category_id 
-       LEFT JOIN film fil 
-              ON flm_cat.film_id = fil.film_id 
-       LEFT JOIN inventory inv 
-              ON fil.film_id = inv.film_id 
-       LEFT JOIN rental ren 
-              ON inv.inventory_id = ren.inventory_id 
-       LEFT JOIN payment pay 
-              ON ren.rental_id = pay.rental_id 
-GROUP  BY cat.name 
-ORDER  BY revenue DESC 
-LIMIT  5; 
+SELECT cat.name category_name,
+       Sum(Ifnull(pay.amount, 0)) revenue
+FROM   category cat
+       LEFT JOIN film_category flm_cat
+              ON cat.category_id = flm_cat.category_id
+       LEFT JOIN film fil
+              ON flm_cat.film_id = fil.film_id
+       LEFT JOIN inventory inv
+              ON fil.film_id = inv.film_id
+       LEFT JOIN rental ren
+              ON inv.inventory_id = ren.inventory_id
+       LEFT JOIN payment pay
+              ON ren.rental_id = pay.rental_id
+GROUP  BY cat.name
+ORDER  BY revenue DESC
+LIMIT  5;
 ```
 
 ## Opening SQLite Databases Directly
@@ -45,7 +45,7 @@ SQLite databases can also be opened directly and can be used transparently inste
 For example, with the shell:
 
 ```sql
-$ > duckdb data/db/sakila.db 
+$ > duckdb data/db/sakila.db
 v0.9.1 401c8061c6
 D SHOW tables;
 ┌────────────────────────┐
@@ -95,10 +95,10 @@ INSERT INTO sqlite_db.tbl VALUES (42, 'DuckDB');
 The resulting SQLite database can then be read into from SQLite.
 
 ```sql
-$r > sqlite3 new_sqlite_database.db 
+$r > sqlite3 new_sqlite_database.db
 SQLite version 3.39.5 2022-10-14 20:58:05
 sqlite> SELECT * FROM tbl;
-id  name  
+id  name
 --  ------
 42  DuckDB
 ```
@@ -187,8 +187,9 @@ SELECT * FROM sqlite_db.tmp;
 >
 >Before building, fetch submodules with `make pull`
 
-To build, type 
+To build, type
 ```
+# to build with multiple cores, use `make GEN=ninja release`
 make
 ```
 
@@ -201,4 +202,3 @@ Then, load the SQLite extension like so:
 ```SQL
 LOAD 'build/release/extension/sqlite_scanner/sqlite_scanner.duckdb_extension';
 ```
-
