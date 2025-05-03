@@ -185,6 +185,7 @@ SELECT * FROM sqlite_db.tmp;
 
 To build, type
 ```
+# to build with multiple cores, use `make GEN=ninja release`
 make
 ```
 
