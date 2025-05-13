@@ -141,10 +141,10 @@ InsertionOrderPreservingMap<string> SQLiteInsert::ParamsToString() const {
 //===--------------------------------------------------------------------===//
 // Plan
 //===--------------------------------------------------------------------===//
-unique_ptr<PhysicalOperator> AddCastToSQLiteTypes(ClientContext &context, unique_ptr<PhysicalOperator> plan) {
+PhysicalOperator &AddCastToSQLiteTypes(ClientContext &context, PhysicalPlanGenerator &planner, PhysicalOperator &plan) {
 	// check if we need to cast anything
 	bool require_cast = false;
-	auto &child_types = plan->GetTypes();
+	auto &child_types = plan.GetTypes();
 	for (auto &type : child_types) {
 		auto sqlite_type = SQLiteUtils::ToSQLiteType(type);
 		if (sqlite_type != type) {
@@ -152,34 +152,35 @@ unique_ptr<PhysicalOperator> AddCastToSQLiteTypes(ClientContext &context, unique
 			break;
 		}
 	}
-	if (require_cast) {
-		vector<LogicalType> sqlite_types;
-		vector<unique_ptr<Expression>> select_list;
-		for (idx_t i = 0; i < child_types.size(); i++) {
-			auto &type = child_types[i];
-			unique_ptr<Expression> expr;
-			expr = make_uniq<BoundReferenceExpression>(type, i);
 
-			auto sqlite_type = SQLiteUtils::ToSQLiteType(type);
-			if (sqlite_type != type) {
-				// add a cast
-				expr = BoundCastExpression::AddCastToType(context, std::move(expr), sqlite_type);
-			}
-			sqlite_types.push_back(std::move(sqlite_type));
-			select_list.push_back(std::move(expr));
-		}
-		// we need to cast: add casts
-		auto proj =
-		    make_uniq<PhysicalProjection>(std::move(sqlite_types), std::move(select_list), plan->estimated_cardinality);
-		proj->children.push_back(std::move(plan));
-		plan = std::move(proj);
+	if (!require_cast) {
+		return plan;
 	}
 
-	return plan;
+	vector<LogicalType> sqlite_types;
+	vector<unique_ptr<Expression>> select_list;
+	for (idx_t i = 0; i < child_types.size(); i++) {
+		auto &type = child_types[i];
+		unique_ptr<Expression> expr;
+		expr = make_uniq<BoundReferenceExpression>(type, i);
+
+		auto sqlite_type = SQLiteUtils::ToSQLiteType(type);
+		if (sqlite_type != type) {
+			// add a cast
+			expr = BoundCastExpression::AddCastToType(context, std::move(expr), sqlite_type);
+		}
+		sqlite_types.push_back(std::move(sqlite_type));
+		select_list.push_back(std::move(expr));
+	}
+	// we need to cast: add casts
+	auto &proj =
+	    planner.Make<PhysicalProjection>(std::move(sqlite_types), std::move(select_list), plan.estimated_cardinality);
+	proj.children.push_back(plan);
+	return proj;
 }
 
-unique_ptr<PhysicalOperator> SQLiteCatalog::PlanInsert(ClientContext &context, LogicalInsert &op,
-                                                       unique_ptr<PhysicalOperator> plan) {
+PhysicalOperator &SQLiteCatalog::PlanInsert(ClientContext &context, PhysicalPlanGenerator &planner, LogicalInsert &op,
+                                            optional_ptr<PhysicalOperator> plan) {
 	if (op.return_chunk) {
 		throw BinderException("RETURNING clause not yet supported for insertion into SQLite table");
 	}
@@ -187,20 +188,19 @@ unique_ptr<PhysicalOperator> SQLiteCatalog::PlanInsert(ClientContext &context, L
 		throw BinderException("ON CONFLICT clause not yet supported for insertion into SQLite table");
 	}
 
-	plan = AddCastToSQLiteTypes(context, std::move(plan));
-
-	auto insert = make_uniq<SQLiteInsert>(op, op.table, op.column_index_map);
-	insert->children.push_back(std::move(plan));
-	return std::move(insert);
+	D_ASSERT(plan);
+	auto &inner_plan = AddCastToSQLiteTypes(context, planner, *plan);
+	auto &insert = planner.Make<SQLiteInsert>(op, op.table, op.column_index_map);
+	insert.children.push_back(*plan);
+	return insert;
 }
 
-unique_ptr<PhysicalOperator> SQLiteCatalog::PlanCreateTableAs(ClientContext &context, LogicalCreateTable &op,
-                                                              unique_ptr<PhysicalOperator> plan) {
-	plan = AddCastToSQLiteTypes(context, std::move(plan));
-
-	auto insert = make_uniq<SQLiteInsert>(op, op.schema, std::move(op.info));
-	insert->children.push_back(std::move(plan));
-	return std::move(insert);
+PhysicalOperator &SQLiteCatalog::PlanCreateTableAs(ClientContext &context, PhysicalPlanGenerator &planner,
+                                                   LogicalCreateTable &op, PhysicalOperator &plan) {
+	auto &inner_plan = AddCastToSQLiteTypes(context, planner, plan);
+	auto &insert = planner.Make<SQLiteInsert>(op, op.schema, std::move(op.info));
+	insert.children.push_back(inner_plan);
+	return insert;
 }
 
 } // namespace duckdb

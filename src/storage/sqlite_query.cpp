@@ -14,7 +14,7 @@
 namespace duckdb {
 
 static unique_ptr<FunctionData> SQLiteQueryBind(ClientContext &context, TableFunctionBindInput &input,
-                                            vector<LogicalType> &return_types, vector<string> &names) {
+                                                vector<LogicalType> &return_types, vector<string> &names) {
 	auto result = make_uniq<SqliteBindData>();
 
 	if (input.inputs[0].IsNull() || input.inputs[1].IsNull()) {
@@ -47,7 +47,7 @@ static unique_ptr<FunctionData> SQLiteQueryBind(ClientContext &context, TableFun
 	if (!stmt.stmt) {
 		throw BinderException("Failed to prepare query \"%s\"", sql);
 	}
-	for(idx_t c = 0; c < stmt.GetColumnCount(); c++) {
+	for (idx_t c = 0; c < stmt.GetColumnCount(); c++) {
 		return_types.emplace_back(LogicalType::VARCHAR);
 		names.emplace_back(stmt.GetName(c));
 	}

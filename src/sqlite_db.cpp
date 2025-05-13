@@ -114,7 +114,8 @@ void SQLiteDB::Close() {
 
 vector<string> SQLiteDB::GetEntries(string entry_type) {
 	vector<string> result;
-	SQLiteStatement stmt = Prepare("SELECT name FROM sqlite_master WHERE length(sql) > 0 AND type='" + entry_type + "'");
+	SQLiteStatement stmt =
+	    Prepare("SELECT name FROM sqlite_master WHERE length(sql) > 0 AND type='" + entry_type + "'");
 	while (stmt.Step()) {
 		auto table_name = stmt.GetValue<string>(0);
 		result.push_back(std::move(table_name));

@@ -60,7 +60,8 @@ string ExtractSelectStatement(const string &create_view) {
 	auto &create_statement = parser.statements[0]->Cast<CreateStatement>();
 	if (create_statement.info->type != CatalogType::VIEW_ENTRY) {
 		throw BinderException(
-		    "Failed to create view from SQL string - \"%s\" - view did not contain a CREATE VIEW statement", create_view);
+		    "Failed to create view from SQL string - \"%s\" - view did not contain a CREATE VIEW statement",
+		    create_view);
 	}
 	auto &view_info = create_statement.info->Cast<CreateViewInfo>();
 	return view_info.query->ToString();
@@ -77,9 +78,8 @@ void ExtractColumnIds(const ParsedExpression &expr, TableCatalogEntry &table, Cr
 		}
 		return;
 	}
-	ParsedExpressionIterator::EnumerateChildren(expr, [&](const ParsedExpression &child) {
-		ExtractColumnIds(child, table, info);
-	});
+	ParsedExpressionIterator::EnumerateChildren(
+	    expr, [&](const ParsedExpression &child) { ExtractColumnIds(child, table, info); });
 }
 
 unique_ptr<CreateIndexInfo> FromCreateIndex(ClientContext &context, TableCatalogEntry &table, string sql) {
@@ -88,18 +88,18 @@ unique_ptr<CreateIndexInfo> FromCreateIndex(ClientContext &context, TableCatalog
 	parser.ParseQuery(sql);
 
 	if (parser.statements.size() != 1 || parser.statements[0]->type != StatementType::CREATE_STATEMENT) {
-		throw BinderException(
-			"Failed to create index from SQL string - \"%s\" - statement did not contain a single CREATE INDEX statement",
-			sql);
+		throw BinderException("Failed to create index from SQL string - \"%s\" - statement did not contain a single "
+		                      "CREATE INDEX statement",
+		                      sql);
 	}
 	auto &create_statement = parser.statements[0]->Cast<CreateStatement>();
 	if (create_statement.info->type != CatalogType::INDEX_ENTRY) {
 		throw BinderException(
-			"Failed to create view from SQL string - \"%s\" - view did not contain a CREATE INDEX statement", sql);
+		    "Failed to create view from SQL string - \"%s\" - view did not contain a CREATE INDEX statement", sql);
 	}
 	auto info = unique_ptr_cast<CreateInfo, CreateIndexInfo>(std::move(create_statement.info));
 	info->sql = std::move(sql);
-	for(auto &expr : info->expressions) {
+	for (auto &expr : info->expressions) {
 		ExtractColumnIds(*expr, table, *info);
 	}
 	return info;
@@ -138,11 +138,12 @@ optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entr
 		unique_ptr<CreateViewInfo> view_info;
 		try {
 			view_info = CreateViewInfo::FromCreateView(*context.lock(), sqlite_catalog.GetMainSchema(), sql);
-		} catch(std::exception &ex) {
+		} catch (std::exception &ex) {
 			auto view_sql = ExtractSelectStatement(sql);
 			auto catalog_name = StringUtil::Replace(sqlite_catalog.GetName(), "\"", "\"\"");
 			auto escaped_view_sql = StringUtil::Replace(view_sql, "'", "''");
-			auto view_def = StringUtil::Format("CREATE VIEW %s AS FROM sqlite_query(\"%s\", '%s')", entry_name, catalog_name, escaped_view_sql);
+			auto view_def = StringUtil::Format("CREATE VIEW %s AS FROM sqlite_query(\"%s\", '%s')", entry_name,
+			                                   catalog_name, escaped_view_sql);
 			view_info = CreateViewInfo::FromCreateView(*context.lock(), sqlite_catalog.GetMainSchema(), view_def);
 		}
 		view_info->internal = false;
@@ -160,8 +161,8 @@ optional_ptr<CatalogEntry> SQLiteTransaction::GetCatalogEntry(const string &entr
 		auto index_info = FromCreateIndex(*context.lock(), table, std::move(sql));
 		index_info->catalog = sqlite_catalog.GetName();
 
-		auto index_entry =
-		    make_uniq<SQLiteIndexEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), *index_info, std::move(table_name));
+		auto index_entry = make_uniq<SQLiteIndexEntry>(sqlite_catalog, sqlite_catalog.GetMainSchema(), *index_info,
+		                                               std::move(table_name));
 		result = std::move(index_entry);
 		break;
 	}
