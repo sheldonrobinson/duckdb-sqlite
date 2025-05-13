@@ -103,8 +103,8 @@ InsertionOrderPreservingMap<string> SQLiteUpdate::ParamsToString() const {
 //===--------------------------------------------------------------------===//
 // Plan
 //===--------------------------------------------------------------------===//
-unique_ptr<PhysicalOperator> SQLiteCatalog::PlanUpdate(ClientContext &context, LogicalUpdate &op,
-                                                       unique_ptr<PhysicalOperator> plan) {
+PhysicalOperator &SQLiteCatalog::PlanUpdate(ClientContext &context, PhysicalPlanGenerator &planner, LogicalUpdate &op,
+                                            PhysicalOperator &plan) {
 	if (op.return_chunk) {
 		throw BinderException("RETURNING clause not yet supported for updates of a SQLite table");
 	}
@@ -113,9 +113,9 @@ unique_ptr<PhysicalOperator> SQLiteCatalog::PlanUpdate(ClientContext &context, L
 			throw BinderException("SET DEFAULT is not yet supported for updates of a SQLite table");
 		}
 	}
-	auto insert = make_uniq<SQLiteUpdate>(op, op.table, std::move(op.columns));
-	insert->children.push_back(std::move(plan));
-	return std::move(insert);
+	auto &update = planner.Make<SQLiteUpdate>(op, op.table, std::move(op.columns));
+	update.children.push_back(plan);
+	return update;
 }
 
 } // namespace duckdb

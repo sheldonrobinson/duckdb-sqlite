@@ -102,13 +102,14 @@ static void SqliteInitInternal(ClientContext &context, const SqliteBindData &bin
 	string sql;
 	if (bind_data.sql.empty()) {
 		auto col_names = StringUtil::Join(
-			local_state.column_ids.data(), local_state.column_ids.size(), ", ", [&](const idx_t column_id) {
-				return column_id == (column_t)-1 ? "ROWID"
-												 : '"' + SQLiteUtils::SanitizeIdentifier(bind_data.names[column_id]) + '"';
-			});
+		    local_state.column_ids.data(), local_state.column_ids.size(), ", ", [&](const idx_t column_id) {
+			    return column_id == (column_t)-1
+			               ? "ROWID"
+			               : '"' + SQLiteUtils::SanitizeIdentifier(bind_data.names[column_id]) + '"';
+		    });
 
-		sql =
-		    StringUtil::Format("SELECT %s FROM \"%s\"", col_names, SQLiteUtils::SanitizeIdentifier(bind_data.table_name));
+		sql = StringUtil::Format("SELECT %s FROM \"%s\"", col_names,
+		                         SQLiteUtils::SanitizeIdentifier(bind_data.table_name));
 		if (bind_data.rows_per_group.IsValid()) {
 			// we are scanning a subset of the rows - generate a WHERE clause based on
 			// the rowid

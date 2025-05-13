@@ -87,15 +87,15 @@ InsertionOrderPreservingMap<string> SQLiteDelete::ParamsToString() const {
 //===--------------------------------------------------------------------===//
 // Plan
 //===--------------------------------------------------------------------===//
-unique_ptr<PhysicalOperator> SQLiteCatalog::PlanDelete(ClientContext &context, LogicalDelete &op,
-                                                       unique_ptr<PhysicalOperator> plan) {
+PhysicalOperator &SQLiteCatalog::PlanDelete(ClientContext &context, PhysicalPlanGenerator &planner, LogicalDelete &op,
+                                            PhysicalOperator &plan) {
 	if (op.return_chunk) {
 		throw BinderException("RETURNING clause not yet supported for deletion of a SQLite table");
 	}
 	auto &bound_ref = op.expressions[0]->Cast<BoundReferenceExpression>();
-	auto insert = make_uniq<SQLiteDelete>(op, op.table, bound_ref.index);
-	insert->children.push_back(std::move(plan));
-	return std::move(insert);
+	auto &delete_op = planner.Make<SQLiteDelete>(op, op.table, bound_ref.index);
+	delete_op.children.push_back(plan);
+	return delete_op;
 }
 
 } // namespace duckdb

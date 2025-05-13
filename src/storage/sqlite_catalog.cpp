@@ -31,9 +31,10 @@ void SQLiteCatalog::ScanSchemas(ClientContext &context, std::function<void(Schem
 	callback(*main_schema);
 }
 
-optional_ptr<SchemaCatalogEntry> SQLiteCatalog::GetSchema(CatalogTransaction transaction, const string &schema_name,
-                                                          OnEntryNotFound if_not_found,
-                                                          QueryErrorContext error_context) {
+optional_ptr<SchemaCatalogEntry> SQLiteCatalog::LookupSchema(CatalogTransaction transaction,
+                                                             const EntryLookupInfo &schema_lookup,
+                                                             OnEntryNotFound if_not_found) {
+	auto &schema_name = schema_lookup.GetEntryName();
 	if (schema_name == DEFAULT_SCHEMA || schema_name == INVALID_SCHEMA) {
 		return main_schema.get();
 	}

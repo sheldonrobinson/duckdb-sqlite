@@ -296,14 +296,14 @@ void SQLiteSchemaEntry::DropEntry(ClientContext &context, DropInfo &info) {
 	transaction.DropEntry(info.type, info.name, info.cascade);
 }
 
-optional_ptr<CatalogEntry> SQLiteSchemaEntry::GetEntry(CatalogTransaction transaction, CatalogType type,
-                                                       const string &name) {
+optional_ptr<CatalogEntry> SQLiteSchemaEntry::LookupEntry(CatalogTransaction transaction,
+                                                          const EntryLookupInfo &lookup_info) {
 	auto &sqlite_transaction = GetSQLiteTransaction(transaction);
-	switch (type) {
+	switch (lookup_info.GetCatalogType()) {
 	case CatalogType::INDEX_ENTRY:
 	case CatalogType::TABLE_ENTRY:
 	case CatalogType::VIEW_ENTRY:
-		return sqlite_transaction.GetCatalogEntry(name);
+		return sqlite_transaction.GetCatalogEntry(lookup_info.GetEntryName());
 	default:
 		return nullptr;
 	}
