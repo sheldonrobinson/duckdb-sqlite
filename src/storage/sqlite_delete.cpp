@@ -9,8 +9,10 @@
 
 namespace duckdb {
 
-SQLiteDelete::SQLiteDelete(LogicalOperator &op, TableCatalogEntry &table, idx_t row_id_index)
-    : PhysicalOperator(PhysicalOperatorType::EXTENSION, op.types, 1), table(table), row_id_index(row_id_index) {
+SQLiteDelete::SQLiteDelete(PhysicalPlan &physical_plan, LogicalOperator &op, TableCatalogEntry &table,
+                           idx_t row_id_index)
+    : PhysicalOperator(physical_plan, PhysicalOperatorType::EXTENSION, op.types, 1), table(table),
+      row_id_index(row_id_index) {
 }
 
 //===--------------------------------------------------------------------===//

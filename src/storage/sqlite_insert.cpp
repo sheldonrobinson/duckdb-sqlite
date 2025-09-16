@@ -13,14 +13,15 @@
 
 namespace duckdb {
 
-SQLiteInsert::SQLiteInsert(LogicalOperator &op, TableCatalogEntry &table,
+SQLiteInsert::SQLiteInsert(PhysicalPlan &physical_plan, LogicalOperator &op, TableCatalogEntry &table,
                            physical_index_vector_t<idx_t> column_index_map_p)
-    : PhysicalOperator(PhysicalOperatorType::EXTENSION, op.types, 1), table(&table), schema(nullptr),
+    : PhysicalOperator(physical_plan, PhysicalOperatorType::EXTENSION, op.types, 1), table(&table), schema(nullptr),
       column_index_map(std::move(column_index_map_p)) {
 }
 
-SQLiteInsert::SQLiteInsert(LogicalOperator &op, SchemaCatalogEntry &schema, unique_ptr<BoundCreateTableInfo> info)
-    : PhysicalOperator(PhysicalOperatorType::EXTENSION, op.types, 1), table(nullptr), schema(&schema),
+SQLiteInsert::SQLiteInsert(PhysicalPlan &physical_plan, LogicalOperator &op, SchemaCatalogEntry &schema,
+                           unique_ptr<BoundCreateTableInfo> info)
+    : PhysicalOperator(physical_plan, PhysicalOperatorType::EXTENSION, op.types, 1), table(nullptr), schema(&schema),
       info(std::move(info)) {
 }
 
@@ -184,14 +185,14 @@ PhysicalOperator &SQLiteCatalog::PlanInsert(ClientContext &context, PhysicalPlan
 	if (op.return_chunk) {
 		throw BinderException("RETURNING clause not yet supported for insertion into SQLite table");
 	}
-	if (op.action_type != OnConflictAction::THROW) {
+	if (op.on_conflict_info.action_type != OnConflictAction::THROW) {
 		throw BinderException("ON CONFLICT clause not yet supported for insertion into SQLite table");
 	}
 
 	D_ASSERT(plan);
 	auto &inner_plan = AddCastToSQLiteTypes(context, planner, *plan);
 	auto &insert = planner.Make<SQLiteInsert>(op, op.table, op.column_index_map);
-	insert.children.push_back(*plan);
+	insert.children.push_back(inner_plan);
 	return insert;
 }
 

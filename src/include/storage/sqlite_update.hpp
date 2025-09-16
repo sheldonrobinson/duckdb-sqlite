@@ -15,7 +15,8 @@ namespace duckdb {
 
 class SQLiteUpdate : public PhysicalOperator {
 public:
-	SQLiteUpdate(LogicalOperator &op, TableCatalogEntry &table, vector<PhysicalIndex> columns);
+	SQLiteUpdate(PhysicalPlan &physical_plan, LogicalOperator &op, TableCatalogEntry &table,
+	             vector<PhysicalIndex> columns);
 
 	//! The table to delete from
 	TableCatalogEntry &table;

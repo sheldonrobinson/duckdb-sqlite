@@ -16,9 +16,11 @@ namespace duckdb {
 class SQLiteInsert : public PhysicalOperator {
 public:
 	//! INSERT INTO
-	SQLiteInsert(LogicalOperator &op, TableCatalogEntry &table, physical_index_vector_t<idx_t> column_index_map);
+	SQLiteInsert(PhysicalPlan &physical_plan, LogicalOperator &op, TableCatalogEntry &table,
+	             physical_index_vector_t<idx_t> column_index_map);
 	//! CREATE TABLE AS
-	SQLiteInsert(LogicalOperator &op, SchemaCatalogEntry &schema, unique_ptr<BoundCreateTableInfo> info);
+	SQLiteInsert(PhysicalPlan &physical_plan, LogicalOperator &op, SchemaCatalogEntry &schema,
+	             unique_ptr<BoundCreateTableInfo> info);
 
 	//! The table to insert into
 	optional_ptr<TableCatalogEntry> table;

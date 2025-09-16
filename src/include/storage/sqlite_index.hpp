@@ -16,7 +16,7 @@ namespace duckdb {
 //! PhysicalCreateSequence represents a CREATE SEQUENCE command
 class SQLiteCreateIndex : public PhysicalOperator {
 public:
-	explicit SQLiteCreateIndex(unique_ptr<CreateIndexInfo> info, TableCatalogEntry &table);
+	SQLiteCreateIndex(PhysicalPlan &physical_plan, unique_ptr<CreateIndexInfo> info, TableCatalogEntry &table);
 
 	unique_ptr<CreateIndexInfo> info;
 	TableCatalogEntry &table;

@@ -13,11 +13,9 @@ public:
 	std::string Name() override {
 		return "sqlite_scanner";
 	}
-	void Load(DuckDB &db) override;
+	void Load(ExtensionLoader &loader) override;
 };
 
 extern "C" {
-DUCKDB_EXTENSION_API void sqlite_scanner_init(duckdb::DatabaseInstance &db);
-DUCKDB_EXTENSION_API const char *sqlite_scanner_version();
-DUCKDB_EXTENSION_API void sqlite_scanner_storage_init(DBConfig &config);
+DUCKDB_CPP_EXTENSION_ENTRY(sqlite_scanner, loader);
 }

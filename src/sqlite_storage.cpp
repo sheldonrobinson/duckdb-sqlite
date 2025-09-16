@@ -12,22 +12,24 @@
 
 namespace duckdb {
 
-static unique_ptr<Catalog> SQLiteAttach(StorageExtensionInfo *storage_info, ClientContext &context,
+static unique_ptr<Catalog> SQLiteAttach(optional_ptr<StorageExtensionInfo> storage_info, ClientContext &context,
                                         AttachedDatabase &db, const string &name, AttachInfo &info,
-                                        AccessMode access_mode) {
+                                        AttachOptions &attach_options) {
 	SQLiteOpenOptions options;
-	options.access_mode = access_mode;
-	for (auto &entry : info.options) {
+	options.access_mode = attach_options.access_mode;
+	for (auto &entry : attach_options.options) {
 		if (StringUtil::CIEquals(entry.first, "busy_timeout")) {
 			options.busy_timeout = entry.second.GetValue<uint64_t>();
 		} else if (StringUtil::CIEquals(entry.first, "journal_mode")) {
 			options.journal_mode = entry.second.ToString();
+		} else {
+			throw NotImplementedException("Unsupported parameter for SQLite Attach: %s", entry.first);
 		}
 	}
 	return make_uniq<SQLiteCatalog>(db, info.path, std::move(options));
 }
 
-static unique_ptr<TransactionManager> SQLiteCreateTransactionManager(StorageExtensionInfo *storage_info,
+static unique_ptr<TransactionManager> SQLiteCreateTransactionManager(optional_ptr<StorageExtensionInfo> storage_info,
                                                                      AttachedDatabase &db, Catalog &catalog) {
 	auto &sqlite_catalog = catalog.Cast<SQLiteCatalog>();
 	return make_uniq<SQLiteTransactionManager>(db, sqlite_catalog);
