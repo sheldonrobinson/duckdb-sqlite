@@ -123,6 +123,11 @@ static void SqliteInitInternal(ClientContext &context, const SqliteBindData &bin
 		sql = bind_data.sql;
 	}
 	local_state.stmt = local_state.db->Prepare(sql.c_str());
+
+	for (idx_t i = 0; i < bind_data.params.size(); i++) {
+		const Value &param = bind_data.params[i];
+		local_state.stmt.BindParameter(param, i);
+	}
 }
 
 static unique_ptr<NodeStatistics> SqliteCardinality(ClientContext &context, const FunctionData *bind_data_p) {

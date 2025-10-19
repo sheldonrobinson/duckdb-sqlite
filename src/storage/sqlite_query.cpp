@@ -42,6 +42,33 @@ static unique_ptr<FunctionData> SQLiteQueryBind(ClientContext &context, TableFun
 		StringUtil::RTrim(sql);
 	}
 
+	vector<Value> params;
+	auto params_it = input.named_parameters.find("params");
+	if (params_it != input.named_parameters.end()) {
+		Value &struct_val = params_it->second;
+		if (struct_val.IsNull()) {
+			throw BinderException("Parameters to sqlite_query cannot be NULL");
+		}
+		if (struct_val.type().id() != LogicalTypeId::STRUCT) {
+			throw BinderException("Query parameters must be specified in a STRUCT");
+		}
+		params = StructValue::GetChildren(struct_val);
+		for (idx_t i = 0; i < params.size(); i++) {
+			const Value &param = params[i];
+			switch(param.type().id()) {
+				case LogicalTypeId::BIGINT:
+				case LogicalTypeId::DOUBLE:
+				case LogicalTypeId::BLOB:
+				case LogicalTypeId::VARCHAR:
+					break;
+				default:
+					if (!param.IsNull()) {
+						throw BinderException("Unsupported parameter type \"%s\", index: %zu", param.type().ToString(), i);
+				}
+			}
+		}
+	}
+
 	auto &con = transaction.GetDB();
 	auto stmt = con.Prepare(sql);
 	if (!stmt.stmt) {
@@ -57,6 +84,7 @@ static unique_ptr<FunctionData> SQLiteQueryBind(ClientContext &context, TableFun
 	}
 	result->rows_per_group = optional_idx();
 	result->sql = std::move(sql);
+	result->params = std::move(params);
 	result->all_varchar = true;
 	result->file_name = sqlite_catalog.GetDBPath();
 	result->global_db = &con;
@@ -70,5 +98,6 @@ SQLiteQueryFunction::SQLiteQueryFunction()
 	init_local = scan_function.init_local;
 	function = scan_function.function;
 	global_initialization = TableFunctionInitialization::INITIALIZE_ON_SCHEDULE;
+	named_parameters["params"] = LogicalType::ANY;
 }
 } // namespace duckdb

@@ -148,8 +148,16 @@ void SQLiteStatement::BindBlob(idx_t col, const string_t &value) {
 	SQLiteUtils::Check(sqlite3_bind_blob(stmt, col + 1, value.GetDataUnsafe(), value.GetSize(), nullptr), db);
 }
 
+void SQLiteStatement::BindBlob(idx_t col, const string &value) {
+	SQLiteUtils::Check(sqlite3_bind_blob(stmt, col + 1, value.c_str(), value.length(), nullptr), db);
+}
+
 void SQLiteStatement::BindText(idx_t col, const string_t &value) {
 	SQLiteUtils::Check(sqlite3_bind_text(stmt, col + 1, value.GetDataUnsafe(), value.GetSize(), nullptr), db);
+}
+
+void SQLiteStatement::BindText(idx_t col, const string &value) {
+	SQLiteUtils::Check(sqlite3_bind_text(stmt, col + 1, value.c_str(), value.length(), nullptr), db);
 }
 
 template <>
@@ -177,6 +185,29 @@ void SQLiteStatement::BindValue(Vector &col, idx_t c, idx_t r) {
 			break;
 		default:
 			throw InternalException("Unsupported type \"%s\" for SQLite::BindValue", col.GetType());
+		}
+	}
+}
+
+void SQLiteStatement::BindParameter(const Value &param, idx_t param_idx) {
+	if (param.IsNull()) {
+		Bind<std::nullptr_t>(param_idx, nullptr);
+	} else {
+		switch (param.type().id()) {
+		case LogicalTypeId::BIGINT:
+			Bind<int64_t>(param_idx, BigIntValue::Get(param));
+			break;
+		case LogicalTypeId::DOUBLE:
+			Bind<double>(param_idx, DoubleValue::Get(param));
+			break;
+		case LogicalTypeId::BLOB:
+			BindBlob(param_idx, StringValue::Get(param));
+			break;
+		case LogicalTypeId::VARCHAR:
+			BindText(param_idx, StringValue::Get(param));
+			break;
+		default:
+			throw InternalException("Unsupported parameter type \"%s\", index: %zu for SQLite::BindValue", param.type().ToString(), param_idx);
 		}
 	}
 }

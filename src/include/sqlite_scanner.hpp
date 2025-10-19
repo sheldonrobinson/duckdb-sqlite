@@ -22,6 +22,7 @@ struct SqliteBindData : public TableFunctionData {
 	vector<string> names;
 	vector<LogicalType> types;
 	string sql;
+	vector<Value> params;
 
 	RowIdInfo row_id_info;
 	bool all_varchar = false;
